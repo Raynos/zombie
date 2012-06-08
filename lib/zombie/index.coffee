@@ -3,6 +3,42 @@ if process.version >= "v0.5.0"
 else
   Util = require("sys")
 
+formatRegExp = /%[sdj]/g
+
+format = Util.format || (f) ->
+  util = require("util")
+  if typeof f isnt "string"
+    objects = []
+    i = 0
+
+    while i < arguments.length
+      objects.push util.inspect(arguments[i])
+      i++
+    return objects.join(" ")
+  i = 1
+  args = arguments
+  str = String(f).replace(formatRegExp, (x) ->
+    switch x
+      when "%s"
+        String args[i++]
+      when "%d"
+        Number args[i++]
+      when "%j"
+        JSON.stringify args[i++]
+      else
+        x
+  )
+  len = args.length
+  x = args[i]
+
+  while i < len
+    if x is null or typeof x isnt "object"
+      str += " " + x
+    else
+      str += " " + util.inspect(x)
+    x = args[++i]
+  str
+
 Browser = require("./browser")
 
 
@@ -51,8 +87,8 @@ console.depth = 0
 console.showHidden = false
 console.log = ->
   formatted = ((if typeof arg == "string" then arg else Util.inspect(arg, console.showHidden, console.depth)) for arg in arguments)
-  if typeof Util.format == 'function'
-    process.stdout.write Util.format.apply(this, formatted) + "\n"
+  if typeof format == 'function'
+    process.stdout.write format.apply(this, formatted) + "\n"
   else
     process.stdout.write formatted.join(" ") + "\n"
 
